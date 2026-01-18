@@ -1,10 +1,14 @@
+import os
 import requests
 import pandas as pd
 
-# 1. Configuration (The Logic)
-CITY = 'Ibadan'
-API_KEY = 'aad4cbdae56d6d693c4f99064fe46dcd'
+# Use os.environ to get the key from Render's secret settings
+API_KEY = os.environ.get('WEATHER_API_KEY')
+CITY = 'Lagos'
+
+# The rest of your logic remains the same
 URL = f'http://api.openweathermap.org/data/2.5/forecast?q={CITY}&appid={API_KEY}&units=metric'
+# ... (rest of your fetch and processing code)
 
 # 2. Execution (The Logic)
 response = requests.get(URL)
