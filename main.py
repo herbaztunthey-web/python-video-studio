@@ -1,28 +1,40 @@
 from moviepy import ColorClip, TextClip, CompositeVideoClip, AudioFileClip, vfx, afx
+import os
 
 # 1. Setup Video (Vertical)
 size = (720, 1280)
-duration = 10 # Let's make it 10 seconds
+duration = 10 
 background = ColorClip(size=size, color=(0, 50, 100), duration=duration)
 
-# 2. Setup Text
-text = TextClip(
-    text="Daily Weather\nReport",
-    font_size=80,
-    color="white",
-    font="C:/Windows/Fonts/arial.ttf",
-    method='caption',
-    size=(600, None),
-    text_align='center',
-    duration=duration
-).with_position('center')
+# 2. Setup Text - Using a font compatible with both Windows and GitHub (Linux)
+# We use 'Liberation-Sans' because we installed it in our GitHub Action
+try:
+    text = TextClip(
+        text="Daily Weather\nReport",
+        font_size=80,
+        color="white",
+        font="Liberation-Sans", 
+        method='caption',
+        size=(600, None),
+        text_align='center',
+        duration=duration
+    ).with_position('center')
+except Exception:
+    # Fallback for your local Windows machine if Liberation-Sans isn't installed there
+    text = TextClip(
+        text="Daily Weather\nReport",
+        font_size=80,
+        color="white",
+        font="Arial", 
+        method='caption',
+        size=(600, None),
+        text_align='center',
+        duration=duration
+    ).with_position('center')
 
 # 3. Handle Audio and Looping
 try:
-    # Load your mp3 file
     audio = AudioFileClip("weather_music.mp3")
-    
-    # Loop the audio to match the video duration (MoviePy v2.x way)
     audio = audio.with_effects([afx.AudioLoop(duration=duration)])
     
     # 4. Combine Video and Audio
