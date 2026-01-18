@@ -1,19 +1,29 @@
-# 🌦️ Weather Impact Analysis: Economic Data Project
+# 🌍 Global Weather Intelligence Dashboard
 
-## Project Overview
-This project explores weather patterns using a real-time API. As an aspiring **Economic and Data Analyst**, I am building this to understand how environmental variables (like temperature and humidity) can serve as indicators for economic trends such as energy demand or agricultural shifts.
+A professional data analytics application that fetches, processes, and visualizes real-time weather intelligence for international markets.
 
-## Technologies Used
-* **Python** (Pandas, Matplotlib, Seaborn)
-* **Jupyter Notebooks** for interactive analysis
-* **Weather API** for real-time data acquisition
+## 🚀 Live Demo
+[View the Live Dashboard on Render](https://python-video-studio.onrender.com)
 
-## Key Analysis Goals
-1. **Trend Identification:** Analyzing weekly temperature fluctuations.
-2. **Correlation Studies:** Examining the relationship between pressure and humidity.
-3. **Portfolio Building:** Deploying data insights to GitHub and Render.
+## 🛠️ Tech Stack
+- **Language:** Python 3.13
+- **Data Analysis:** Pandas, NumPy, SciPy (Linear Regression)
+- **Visualization:** Matplotlib, Seaborn
+- **Web Framework:** Flask & Gunicorn
+- **Deployment:** Render (Cloud)
+- **Version Control:** Git & GitHub
 
-## How to Run
-1. Install dependencies: `pip install pandas matplotlib seaborn`
-2. Open `weather_analysis.ipynb` in VS Code.
-3. Add your API Key to the first cell and run!
+## 📊 Key Features
+- **Multi-City Monitoring:** Real-time data fetching for Lagos, London, New York, Tokyo, and more.
+- **Predictive Analytics:** Integrated a trendline (best-fit line) to forecast temperature shifts.
+- **Smart UI:** Conditional CSS formatting (Red for Heat >30°C, Blue for Cold <15°C).
+- **Production Ready:** Secure API key handling using `os.environ`.
+
+## 📈 Analysis Methodology
+The project utilizes a `scipy.stats.linregress` model to calculate the rate of change in local temperatures, allowing for 5-day trend predictions.
+
+## 📦 Installation & Setup
+1. Clone the repo: `git clone [YOUR_GITHUB_URL]`
+2. Install requirements: `pip install -r requirements.txt`
+3. Set your API Key: `export WEATHER_API_KEY='your_key_here'`
+4. Run the app: `python app.py`
