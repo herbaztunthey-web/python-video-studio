@@ -1,7 +1,8 @@
-from flask import Flask, request
 import os
 import requests
 import pandas as pd
+from flask import Flask, request
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -9,46 +10,70 @@ app = Flask(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def home():
     API_KEY = os.environ.get('WEATHER_API_KEY')
-    # Default static cities for the landing page
-    cities = ['Lagos', 'London', 'New York']
+    # Starting list of cities
+    cities_to_track = ['Lagos', 'London', 'New York', 'Tokyo']
 
-    # DYNAMIC LOGIC: If user types a city in the search bar
+    # If user searches, add that city to the top of the list
     if request.method == 'POST':
-        user_city = request.form.get('city')
-        if user_city:
-            cities = [user_city]
+        user_search = request.form.get('city')
+        if user_search and user_search not in cities_to_track:
+            cities_to_track.insert(0, user_search)
 
-    all_data = []
-    for city in cities:
+    all_city_data = []
+
+    for city in cities_to_track:
         url = f'http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units=metric'
-        res = requests.get(url)
-        if res.status_code == 200:
-            df = pd.json_normalize(res.json()['list'])
-            latest = df.head(1).copy()
-            latest['City'] = city
-            all_data.append(latest)
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                df = pd.json_normalize(data['list'])
+                # Select the first forecast entry for this city
+                city_row = df.head(1).copy()
+                city_row['City Name'] = city.title()
+                all_city_data.append(city_row)
+        except Exception as e:
+            print(f"Error fetching {city}: {e}")
 
-    # UI with Search Bar
-    html = """
+    # Combine all city rows into one vertical table
+    if all_city_data:
+        final_df = pd.concat(all_city_data, ignore_index=True)
+        # Clean the columns for the final display
+        report = final_df[['City Name', 'dt_txt',
+                           'main.temp', 'main.humidity']]
+        report.columns = ['Market Location',
+                          'Forecast Time', 'Temp (°C)', 'Humidity (%)']
+    else:
+        return "<h1>Analysis Error: No data found. Check your API Key.</h1>"
+
+    # Styling and Layout
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    html_style = f"""
     <style>
-        body { font-family: sans-serif; margin: 50px; background: #f4f7f6; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        input { padding: 10px; width: 200px; border-radius: 5px; border: 1px solid #ddd; }
-        button { padding: 10px; background: #1f3b64; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
-        th { background: #1f3b64; color: white; padding: 10px; text-align: left; }
-        td { padding: 10px; border-bottom: 1px solid #eee; }
+        body {{ font-family: 'Segoe UI', Tahoma, sans-serif; margin: 40px; background-color: #f8f9fa; }}
+        .dashboard-card {{ background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }}
+        h1 {{ color: #1f3b64; border-bottom: 3px solid #1f3b64; padding-bottom: 10px; }}
+        input {{ padding: 12px; width: 300px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }}
+        button {{ padding: 12px 25px; background: #1f3b64; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 30px; }}
+        th {{ background-color: #1f3b64; color: white; padding: 15px; text-align: left; }}
+        td {{ padding: 15px; border-bottom: 1px solid #eee; font-weight: 500; }}
+        tr:hover {{ background-color: #f1f1f1; }}
+        .timestamp {{ margin-top: 20px; font-size: 0.8em; color: #7f8c8d; text-align: right; }}
     </style>
-    <div class="card">
-        <h1>Global Weather Search</h1>
+    <div class="dashboard-card">
+        <h1>Economic Weather Intelligence Monitor</h1>
         <form method="POST">
-            <input type="text" name="city" placeholder="Enter city name...">
-            <button type="submit">Analyze City</button>
+            <input type="text" name="city" placeholder="Enter city (e.g. Paris, Abuja)..." required>
+            <button type="submit">Analyze Market</button>
         </form>
-        <table>
-            <tr><th>City</th><th>Temp</th><th>Humidity</th></tr>
+        {report.to_html(index=False)}
+        <div class="timestamp">Last Intelligence Sync: {now} (UTC)</div>
+    </div>
     """
-    for _, row in pd.concat(all_data).iterrows():
-        html += f"<tr><td>{row['City']}</td><td>{row['main.temp']}°C</td><td>{row['main.humidity']}%</td></tr>"
+    return html_style
 
-    return html + "</table></div>"
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
