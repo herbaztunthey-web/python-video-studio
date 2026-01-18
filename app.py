@@ -6,40 +6,79 @@ import pandas as pd
 app = Flask(__name__)
 
 
+def get_color(temp):
+    if temp > 30:
+        return "#e74c3c"  # Red for Heat
+    if temp < 15:
+        return "#3498db"  # Blue for Cold
+    return "#2ecc71"  # Green for Moderate
+
+
 @app.route('/')
 def home():
-    # Security: Fetching the key from Render Environment Variables
     API_KEY = os.environ.get('WEATHER_API_KEY')
-    CITY = 'Lagos'
-    URL = f'http://api.openweathermap.org/data/2.5/forecast?q={CITY}&appid={API_KEY}&units=metric'
+    # Add as many cities as you like here
+    CITIES = ['Lagos', 'London', 'New York', 'Tokyo', 'Dubai', 'Accra']
+    all_data = []
 
-    response = requests.get(URL)
-    if response.status_code == 200:
-        data = response.json()
-        df = pd.json_normalize(data['list'])
+    for city in CITIES:
+        URL = f'http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units=metric'
+        try:
+            response = requests.get(URL)
+            if response.status_code == 200:
+                data = response.json()
+                df = pd.json_normalize(data['list'])
+                latest = df.head(1).copy()
+                latest['City'] = city
+                # Apply the color logic
+                temp = latest['main.temp'].values[0]
+                latest['Color'] = get_color(temp)
+                all_data.append(latest)
+        except Exception as e:
+            print(f"Error fetching {city}: {e}")
 
-        # Data Cleaning: Extracting specific columns for your report
-        report = df[['dt_txt', 'main.temp', 'main.humidity']].head(15)
-        report.columns = ['Date & Time', 'Temperature (°C)', 'Humidity (%)']
+    final_df = pd.concat(all_data)
 
-        # Professional CSS Styling
-        html_style = """
+    # Building the HTML with the features
+    html = """
+    <html>
+    <head>
         <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 50px; background-color: #f0f2f5; }
-            .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-            h1 { color: #1f3b64; border-bottom: 2px solid #1f3b64; padding-bottom: 10px; }
-            table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-            th { background-color: #1f3b64; color: white; padding: 12px; text-align: left; }
-            td { padding: 12px; border-bottom: 1px solid #eee; }
-            tr:hover { background-color: #f9f9f9; }
+            body { font-family: 'Segoe UI', sans-serif; margin: 40px; background-color: #f4f7f6; }
+            .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+            h1 { color: #1f3b64; margin-bottom: 5px; }
+            .timestamp { color: #7f8c8d; margin-bottom: 25px; font-size: 0.9em; }
+            table { width: 100%; border-collapse: collapse; }
+            th { text-align: left; padding: 15px; background: #1f3b64; color: white; text-transform: uppercase; }
+            td { padding: 15px; border-bottom: 1px solid #eee; font-weight: bold; }
+            .temp-badge { padding: 5px 10px; border-radius: 5px; color: white; }
         </style>
-        <div class="container">
-            <h1>Economic Weather Intelligence Report</h1>
-            <p>Location: <b>Lagos</b> | Source: OpenWeather API</p>
-        """
-        return html_style + report.to_html(index=False) + "</div>"
+    </head>
+    <body>
+        <div class="card">
+            <h1>Global Economic Weather Monitor</h1>
+            <div class="timestamp">Live Market Data Sync: Successful</div>
+            <table>
+                <tr>
+                    <th>City</th>
+                    <th>Local Time (UTC)</th>
+                    <th>Temperature</th>
+                    <th>Humidity</th>
+                </tr>
+    """
 
-    return "<h2>Error: Could not fetch weather data. Check your API Key in Render.</h2>"
+    for _, row in final_df.iterrows():
+        html += f"""
+        <tr>
+            <td>{row['City']}</td>
+            <td>{row['dt_txt']}</td>
+            <td><span class="temp-badge" style="background-color: {row['Color']}">{row['main.temp']}°C</span></td>
+            <td>{row['main.humidity']}%</td>
+        </tr>
+        """
+
+    html += "</table></div></body></html>"
+    return html
 
 
 if __name__ == "__main__":
